@@ -30,7 +30,7 @@ class PlayState extends FlxState
 	// the current bullet we're shooting
 	var bullet:Bullet;
 
-	// text display for the number of living bullets and the length of the bullet group
+	// text display for the status
 	var status:FlxText;
 
 	// text display for the instructions
