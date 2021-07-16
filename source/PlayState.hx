@@ -8,13 +8,16 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 
 using Math;
+using flixel.math.FlxMath;
 
 /**
  * Recycle Demo
- * A simple example of object pooling and recycling. The group of bullets will 
- * grow by creating new bullets as needed, depending on the maxSize of the group. 
- * Otherwise, if dead bullets are available it will recycle them from the pool. 
- * This way we reuse a small pool of bullets to fire many.
+ * An example of object pooling and recycling that demonstrates the way maxSize affects how 
+ * many objects are instantiated. The group of bullets will grow by creating new instances 
+ * as needed, depending on how many non-living are available and the maxSize of the group. 
+ * If dead bullets are available, it will recycle them from the pool, otherwise, it creates 
+ * a new one. If there are maxSize living objects, a living one is recycled. With maxSize 
+ * of 0 (default) the group continues to grow indefinitely and no living ones are recycled.
  */
 class PlayState extends FlxState
 {
@@ -33,26 +36,23 @@ class PlayState extends FlxState
 	// text display for the status
 	var status:FlxText;
 
-	// text display for the instructions
-	var instructions:FlxText;
-
 	// how many bullets to shoot at a time
 	var shootCount = 5;
 
 	override function create():Void
 	{
-		// status text
-		status = new FlxText(0, 0, FlxG.width, "Shoot Count: " + shootCount + "\nPool Size: 0\nMax Size: 0 (No Limit)\nLiving: 0");
-		status.setFormat(null, 16, FlxColor.WHITE, CENTER);
-
-		// instructions text
-		instructions = new FlxText(0, FlxG.height - 110, FlxG.width, "ENTER key to Shoot\nPLUS/MINUS keys to set Shoot Count\nARROW keys to set the Max Size\nR key to Reset\nChange the Max Size to see how it affects the Pool Size");
+		// text display for the instructions
+		var instructions = new FlxText(0, FlxG.height - 110, FlxG.width, "ENTER to Shoot\nPLUS/MINUS to set Shoot Count\nARROWS/WASD to set the Max Size\nR to Reset\nChange the Max Size to see how it affects the Pool Size");
 		instructions.setFormat(null, 16, FlxColor.WHITE, CENTER);
+
+		// text display for the status
+		status = new FlxText(0, 0, FlxG.width, "Shoot Count: " + shootCount + "\nPool Size: 0\nMax Size: 0 (No Limit)\nLiving: -1");
+		status.setFormat(null, 16, FlxColor.WHITE, CENTER);
 
 		// add the bullets, status and instructions
 		add(bullets);
-		add(status);
 		add(instructions);
+		add(status);
 	}
 
 	override function update(elapsed:Float):Void
@@ -67,17 +67,17 @@ class PlayState extends FlxState
 		if (FlxG.keys.justPressed.R)
 			FlxG.resetState();
 
-		// set the shootCount with +/- keys
+		// set the shootCount from 1-10
 		if (FlxG.keys.anyJustPressed([PLUS, NUMPADPLUS]))
-			shootCount = spin(++shootCount, 1, 10);
+			shootCount = endWrap(++shootCount, 1, 10);
 		else if (FlxG.keys.anyJustPressed([MINUS, NUMPADMINUS]))
-			shootCount = spin(--shootCount, 1, 10);
+			shootCount = endWrap(--shootCount, 1, 10);
 
-		// set the maxSize from 0 - 100 with arrow keys
-		if (FlxG.keys.justPressed.UP || FlxG.keys.justPressed.RIGHT)
-			bullets.maxSize = spin(bullets.maxSize - bullets.maxSize % 10 + 10, 0, 100);
-		else if (FlxG.keys.justPressed.DOWN || FlxG.keys.justPressed.LEFT)
-			bullets.maxSize = spin(bullets.maxSize - bullets.maxSize % 10 - 10, 0, 100);
+		// set the maxSize from 0-100
+		if (FlxG.keys.anyJustPressed([UP, W]) || FlxG.keys.anyJustPressed([RIGHT, D]))
+			bullets.maxSize = endWrap(bullets.maxSize - bullets.maxSize % 10 + 10, 0, 100);
+		else if (FlxG.keys.anyJustPressed([DOWN, S]) || FlxG.keys.anyJustPressed([LEFT, A]))
+			bullets.maxSize = endWrap(bullets.maxSize - bullets.maxSize % 10 - 10, 0, 100);
 
 		// update the status text
 		status.text = "Shoot Count: " + shootCount + 
@@ -99,7 +99,7 @@ class PlayState extends FlxState
 		bullet.velocity.set(rangle.cos() * bullet.speed, rangle.sin() * bullet.speed);
 	}
 
-	function spin(value:Int, min:Int, max:Int):Int
+	function endWrap(value:Int, min:Int, max:Int):Int
 	{
 		if (value < min) return max;
 		if (value > max) return min;
